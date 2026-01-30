@@ -61,8 +61,8 @@ async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"✅ Available Accounts: {available}\n"
         f"💰 Sold Accounts: {sold}\n"
         f"👥 Total Users: {users}\n"
-        f"💵 Current Price: ${price}\n"
-        f"🎁 Referral Bonus: ${ref_bonus}\n"
+        f"💵 Current Price: BDT {price}\n"
+        f"🎁 Referral Bonus: BDT {ref_bonus}\n"
         f"📧 Recovery Email: `{recovery}`\n"
         f"📝 Names: `{first} {last}`"
     )
@@ -211,7 +211,7 @@ async def view_withdrawals(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.edit_message_text(
         f"💰 *Pending Withdrawal ({len(withdrawals)} left)*\n\n"
         f"👤 User ID: `{user_id}`\n"
-        f"💸 Amount: `${amount:.2f}`\n"
+        f"💸 Amount: `BDT {amount:.2f}`\n"
         f"💳 Method: `{method}`\n"
         f"📋 Details:\n`{det_str}`",
         reply_markup=InlineKeyboardMarkup(keyboard),
@@ -367,7 +367,7 @@ async def price_start_callback(update: Update, context: ContextTypes.DEFAULT_TYP
     await query.answer()
     current = await db.get_price()
     await query.edit_message_text(
-        f"Current price: ${current}\nSend me the new price (e.g. 0.25):",
+        f"Current price: BDT {current}\nSend me the new price (e.g. 0.25):",
         parse_mode="Markdown"
     )
     return SETTING_PRICE
@@ -377,7 +377,7 @@ async def set_price_val(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         price = float(text)
         await db.set_price(price)
-        await update.message.reply_text(f"✅ Price updated to ${price}")
+        await update.message.reply_text(f"✅ Price updated to BDT {price}")
         await start(update, context)
         return ConversationHandler.END
     except ValueError:
@@ -389,7 +389,7 @@ async def ref_bonus_start_callback(update: Update, context: ContextTypes.DEFAULT
     await query.answer()
     current = await db.get_referral_bonus()
     await query.edit_message_text(
-        f"Current Referral Bonus: ${current}\nSend me the new bonus amount (e.g. 0.05):",
+        f"Current Referral Bonus: BDT {current}\nSend me the new bonus amount (e.g. 0.05):",
         parse_mode="Markdown"
     )
     return SETTING_REF_BONUS
@@ -399,7 +399,7 @@ async def set_ref_bonus_val(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         price = float(text)
         await db.set_referral_bonus(price)
-        await update.message.reply_text(f"✅ Referral Bonus updated to ${price}")
+        await update.message.reply_text(f"✅ Referral Bonus updated to BDT {price}")
         await start(update, context)
         return ConversationHandler.END
     except ValueError:

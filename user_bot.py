@@ -73,8 +73,8 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 
             await update.message.reply_text(
                 f"💰 *Wallet Balance*\n\n"
-                f"✅ Available: ${balance:.2f}\n"
-                f"⏳ Hold: ${hold:.2f}\n\n"
+                f"✅ Available: BDT {balance:.2f}\n"
+                f"⏳ Hold: BDT {hold:.2f}\n\n"
                 "Funds in 'Hold' will be moved to 'Available' after admin approval (approx. 24h).",
                 reply_markup=InlineKeyboardMarkup(keyboard),
                 parse_mode="Markdown"
@@ -98,7 +98,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             link = f"https://t.me/{bot_username}?start={user_id}"
             await update.message.reply_text(
                 f"👥 *My Referrals*\n\n"
-                f"💰 *Commission per Sale:* ${bonus:.2f}\n"
+                f"💰 *Commission per Sale:* BDT {bonus:.2f}\n"
                 f"👥 Total Referrals: {count}\n\n"
                 f"🔗 *Your Referral Link:*\n`{link}`",
                 parse_mode="Markdown"
@@ -128,13 +128,13 @@ async def withdraw_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
     balance, _ = await db.get_user_balance(user_id)
     if balance < 0.50:
-         await query.message.reply_text(f"⚠️ Minimum withdrawal is $0.50. You have ${balance:.2f}.")
+         await query.message.reply_text(f"⚠️ Minimum withdrawal is BDT 0.50. You have BDT {balance:.2f}.")
          return ConversationHandler.END
 
     methods_str = ", ".join(pay_info.keys())
     await query.message.reply_text(
         f"💸 *Withdraw Request*\n\n"
-        f"Available: ${balance:.2f}\n"
+        f"Available: BDT {balance:.2f}\n"
         f"Saved Methods: {methods_str}\n\n"
         "Enter the amount you want to withdraw (e.g. 5.00):",
         parse_mode="Markdown"
@@ -160,7 +160,7 @@ async def withdraw_process(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     success, msg = await db.create_withdrawal(user_id, amount, "Manual", details)
     if success:
-        await update.message.reply_text(f"✅ Withdrawal request of ${amount:.2f} submitted successfully!")
+        await update.message.reply_text(f"✅ Withdrawal request of BDT {amount:.2f} submitted successfully!")
         
         # Notify Admins
         admins = await db.get_admins()
@@ -172,7 +172,7 @@ async def withdraw_process(update: Update, context: ContextTypes.DEFAULT_TYPE):
                         admin_id, 
                         f"💸 *New Withdrawal Request*\n"
                         f"User ID: `{user_id}`\n"
-                        f"Amount: `${amount:.2f}`",
+                        f"Amount: `BDT {amount:.2f}`",
                         parse_mode="Markdown"
                     )
                 except Exception as e:
@@ -293,7 +293,7 @@ async def register_account(update: Update, context: ContextTypes.DEFAULT_TYPE):
         recovery_section = ""
     
     message = (
-        f"Register account using the specified data and get ${price}\n\n"
+        f"Register account using the specified data and get BDT {price}\n\n"
         f"First name: `{first}`\n"
         f"Last name: `{last}`\n"
         f"Email: `{email}`\n"
@@ -326,7 +326,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 id_val, email, password, f, l = acc_info
                 
                 await query.edit_message_text(
-                    f"✅ Account submitted for approval! You earned ${price} (Hold).\n"
+                    f"✅ Account submitted for approval! You earned BDT {price} (Hold).\n"
                     "Admin will verify within 24 hours.\n"
                     "Check 'My accounts' for status."
                 )
