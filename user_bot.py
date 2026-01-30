@@ -95,8 +95,9 @@ TRANSLATIONS = {
     }
 }
 
-async def get_text(user_id, key, **kwargs):
-    lang = await db.get_user_language(user_id)
+async def get_text(user_id, key, lang=None, **kwargs):
+    if not lang:
+        lang = await db.get_user_language(user_id)
     text = TRANSLATIONS.get(lang, TRANSLATIONS['en']).get(key, key)
     return text.format(**kwargs) if kwargs else text
 
@@ -324,17 +325,24 @@ async def settings_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await db.set_user_language(user_id, lang)
         
         # Update text immediately
-        await query.edit_message_text(await get_text(user_id, 'language_set'))
+        await query.edit_message_text(await get_text(user_id, 'language_set', lang=lang))
         
         # Refresh Main Menu Keyboard
         user = query.from_user
         keyboard = [
-            [await get_text(user.id, 'btn_register'), await get_text(user.id, 'btn_my_accounts')],
-            [await get_text(user.id, 'btn_balance'), await get_text(user.id, 'btn_referrals')],
-            [await get_text(user.id, 'btn_settings'), await get_text(user.id, 'btn_help')]
+            [await get_text(user.id, 'btn_register', lang=lang), await get_text(user.id, 'btn_my_accounts', lang=lang)],
+            [await get_text(user.id, 'btn_balance', lang=lang), await get_text(user.id, 'btn_referrals', lang=lang)],
+            [await get_text(user.id, 'btn_settings', lang=lang), await get_text(user.id, 'btn_help', lang=lang)]
         ]
         reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
-        await query.message.reply_text(await get_text(user.id, 'welcome_msg', name=user.first_name), reply_markup=reply_markup)
+        # Send a fresh message confirming the change (which updates the keyboard)
+        # We use a trick: delete the old 'welcome' message if we could, but we can't easily track it.
+        # Just sending a new one is standard.
+        await context.bot.send_message(
+            chat_id=user_id,
+            text=await get_text(user.id, 'welcome_msg', lang=lang, name=user.first_name),
+            reply_markup=reply_markup
+        )
         
     elif data == "settings_back":
         await settings_menu(update, context)
