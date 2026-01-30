@@ -502,6 +502,7 @@ def get_user_handler():
         conv_withdraw,
         
         CallbackQueryHandler(settings_callback, pattern="^settings_"),
+        CallbackQueryHandler(settings_callback, pattern="^lang_"),
         CallbackQueryHandler(settings_callback, pattern="^close$"),
         
         MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message),
