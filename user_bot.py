@@ -322,8 +322,19 @@ async def settings_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif data.startswith("lang_"):
         lang = data.split("_")[1]
         await db.set_user_language(user_id, lang)
+        
         # Update text immediately
         await query.edit_message_text(await get_text(user_id, 'language_set'))
+        
+        # Refresh Main Menu Keyboard
+        user = query.from_user
+        keyboard = [
+            [await get_text(user.id, 'btn_register'), await get_text(user.id, 'btn_my_accounts')],
+            [await get_text(user.id, 'btn_balance'), await get_text(user.id, 'btn_referrals')],
+            [await get_text(user.id, 'btn_settings'), await get_text(user.id, 'btn_help')]
+        ]
+        reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+        await query.message.reply_text(await get_text(user.id, 'welcome_msg', name=user.first_name), reply_markup=reply_markup)
         
     elif data == "settings_back":
         await settings_menu(update, context)
