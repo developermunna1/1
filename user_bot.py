@@ -69,10 +69,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             
         elif text == "💰 Balance":
             balance, hold = await db.get_user_balance(user_id)
-            pay_info = await db.get_payment_info(user_id)
-            keyboard = []
-            if balance > 0.0 or pay_info:
-                keyboard.append([InlineKeyboardButton("💸 Withdraw", callback_data="withdraw_start")])
+            keyboard = [[InlineKeyboardButton("💸 Withdraw", callback_data="withdraw_start")]]
                 
             await update.message.reply_text(
                 f"💰 *Wallet Balance*\n\n"
