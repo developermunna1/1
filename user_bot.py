@@ -8,7 +8,97 @@ import logging
 from dotenv import load_dotenv
 
 load_dotenv()
-ADMIN_BOT_TOKEN = os.getenv("ADMIN_BOT_TOKEN")
+
+# Translations
+TRANSLATIONS = {
+    'en': {
+        'welcome_msg': "👋 Hello {name}!\nWelcome to the Gmail Selling Bot.\nSelect an option below to get started.",
+        'btn_register': "➕ Register a new account",
+        'btn_my_accounts': "📋 My accounts",
+        'btn_balance': "💰 Balance",
+        'btn_referrals': "👥 My referrals",
+        'btn_settings': "⚙️ Settings",
+        'btn_help': "💬 Help",
+        'balance_msg': "💰 *Wallet Balance*\n\n✅ Available: BDT {balance:.2f}\n⏳ Hold: BDT {hold:.2f}\n\nFunds in 'Hold' will be moved to 'Available' after admin approval (approx. 24h).",
+        'withdraw_btn': "💸 Withdraw",
+        'no_accounts_sold': "You haven't sold any accounts yet.",
+        'my_accounts_title': "📋 *My Last 10 Accounts:*\n\n",
+        'referrals_msg': "👥 *My Referrals*\n\n💰 *Commission per Sale:* BDT {bonus:.2f}\n👥 Total Referrals: {count}\n\n🔗 *Your Referral Link:*\n`{link}`",
+        'help_msg': "Contact @developermunna for support.",
+        'settings_title': "⚙️ *Settings*",
+        'payment_methods_btn': "💳 Payment Methods",
+        'language_btn': "🌐 Language",
+        'close_btn': "🚫 Close",
+        'back_btn': "🔙 Back",
+        'payment_methods_msg': "💳 *Payment Methods*\n\nYour saved methods:\n{info_str}\n\nSelect a method to add/edit:",
+        'select_language': "🌐 Select Language:",
+        'language_set': "✅ Language set to English (Saved).",
+        'enter_payment': "Enter your *{method} {label}*:",
+        'payment_saved': "✅ Saved {method}: `{value}`",
+        'no_accounts_avail': "⚠️ No accounts available. Please try again later.",
+        'register_msg': "Register account using the specified data and get BDT {price}\n\nFirst name: `{first}`\nLast name: `{last}`\nEmail: `{email}`\nPassword: `{password}`\n{recovery_section}\n\n🔒 Be sure to use the specified data.",
+        'btn_done': "✔️ Done",
+        'btn_cancel_reg': "🚫 Cancel registration",
+        'btn_how_to': "❓ How to create account",
+        'account_submitted': "✅ Account submitted for approval! You earned BDT {price} (Hold).\nAdmin will verify within 24 hours.\nCheck 'My accounts' for status.",
+        'reg_cancelled': "🚫 Registration cancelled. Account released.",
+        'help_create_msg': "Go to gmail.com, click Create Account, use the provided email and password. Use a clean IP.",
+        'withdraw_no_method': "⚠️ You have not set a payment method yet.\nPlease go to ⚙️ Settings > Payment Methods and save one first.",
+        'withdraw_min_error': "⚠️ Minimum withdrawal is BDT 0.50. You have BDT {balance:.2f}.",
+        'withdraw_request_msg': "💸 *Withdraw Request*\n\nAvailable: BDT {balance:.2f}\nSaved Methods: {methods_str}\n\nEnter the amount you want to withdraw (e.g. 5.00):",
+        'invalid_amount': "❌ Invalid amount. Please enter a number (e.g. 5.50) or /cancel.",
+        'amount_greater_zero': "❌ Amount must be greater than 0.",
+        'withdraw_success': "✅ Withdrawal request of BDT {amount:.2f} submitted successfully!",
+        'withdraw_error': "❌ Error: {msg}",
+        'action_cancelled': "Action cancelled."
+    },
+    'bn': {
+        'welcome_msg': "👋 হ্যালো {name}!\nGmail সেলিং বটে স্বাগতম।\nশুরু করতে নিচের একটি অপশন সিলেক্ট করুন।",
+        'btn_register': "➕ নতুন অ্যাকাউন্ট রেজিস্টার করুন",
+        'btn_my_accounts': "📋 আমার অ্যাকাউন্টগুলো",
+        'btn_balance': "💰 ব্যালেন্স",
+        'btn_referrals': "👥 আমার রেফারেল",
+        'btn_settings': "⚙️ সেটিংস",
+        'btn_help': "💬 সাহায্য",
+        'balance_msg': "💰 *ওয়ালেট ব্যালেন্স*\n\n✅ অ্যাভেইলেবল: BDT {balance:.2f}\n⏳ হোল্ড: BDT {hold:.2f}\n\n'হোল্ড' এর টাকা অ্যাডমিন অ্যাপ্রুভালের পর 'অ্যাভেইলেবল' এ চলে যাবে (প্রায় ২৪ ঘণ্টা)।",
+        'withdraw_btn': "💸 উইথড্র",
+        'no_accounts_sold': "আপনি এখনো কোনো অ্যাকাউন্ট বিক্রি করেননি।",
+        'my_accounts_title': "📋 *আমার শেষ ১০টি অ্যাকাউন্ট:*\n\n",
+        'referrals_msg': "👥 *আমার রেফারেল*\n\n💰 *সেল প্রতি কমিশন:* BDT {bonus:.2f}\n👥 মোট রেফারেল: {count}\n\n🔗 *আপনার রেফারেল লিংক:*\n`{link}`",
+        'help_msg': "@developermunna এর সাথে যোগাযোগ করুন।",
+        'settings_title': "⚙️ *সেটিংস*",
+        'payment_methods_btn': "💳 পেমেন্ট মেথড",
+        'language_btn': "🌐 ভাষা (Language)",
+        'close_btn': "🚫 বন্ধ করুন",
+        'back_btn': "🔙 পেছনে",
+        'payment_methods_msg': "💳 *পেমেন্ট মেথড*\n\nআপনার সেভ করা মেথড:\n{info_str}\n\nঅ্যাড/এডিট করতে একটি মেথড সিলেক্ট করুন:",
+        'select_language': "🌐 ভাষা সিলেক্ট করুন:",
+        'language_set': "✅ ভাষা বাংলা সেট করা হয়েছে (সেভড)।",
+        'enter_payment': "আপনার *{method} {label}* দিন:",
+        'payment_saved': "✅ সেভড {method}: `{value}`",
+        'no_accounts_avail': "⚠️ কোনো অ্যাকাউন্ট নেই। দয়া করে পরে চেষ্টা করুন।",
+        'register_msg': "নিচের তথ্য দিয়ে অ্যাকাউন্ট তৈরি করুন এবং BDT {price} পান\n\nনাম: `{first} {last}`\nইমেইল: `{email}`\nপাসওয়ার্ড: `{password}`\n{recovery_section}\n\n🔒 অবশ্যই এই তথ্যগুলো ব্যবহার করবেন।",
+        'btn_done': "✔️ সম্পন্ন (Done)",
+        'btn_cancel_reg': "🚫 বাতিল করুন",
+        'btn_how_to': "❓ কিভাবে অ্যাকাউন্ট করবেন",
+        'account_submitted': "✅ অ্যাকাউন্ট জমা দেওয়া হয়েছে! আপনি BDT {price} অর্জন করেছেন (হোল্ড)।\nঅ্যাডমিন ২৪ ঘণ্টার মধ্যে ভেরিফাই করবেন।\n'আমার অ্যাকাউন্টগুলো' তে স্ট্যাটাস চেক করুন।",
+        'reg_cancelled': "🚫 রেজিস্ট্রেশন বাতিল করা হয়েছে। অ্যাকাউন্ট রিলিজড।",
+        'help_create_msg': "gmail.com এ যান, Create Account এ ক্লিক করুন, দেওয়া ইমেইল এবং পাসওয়ার্ড ব্যবহার করুন। ক্লিন আইপি ব্যবহার করুন।",
+        'withdraw_no_method': "⚠️ আপনি কোনো পেমেন্ট মেথড সেট করেননি।\nদয়া করে ⚙️ সেটিংস > পেমেন্ট মেথড এ গিয়ে আগে সেট করুন।",
+        'withdraw_min_error': "⚠️ সর্বনিম্ন উইথড্র BDT 0.50। আপনার আছে BDT {balance:.2f}।",
+        'withdraw_request_msg': "💸 *উইথড্র রিকোয়েস্ট*\n\nঅ্যাভেইলেবল: BDT {balance:.2f}\nসেভড মেথড: {methods_str}\n\nআপনি কত টাকা তুলতে চান লিখুন (যেমন: 5.00):",
+        'invalid_amount': "❌ ভুল অ্যামাউন্ট। দয়া করে সংখ্যা লিখুন (যেমন: 5.50) অথবা /cancel দিন।",
+        'amount_greater_zero': "❌ অ্যামাউন্ট ০ এর বেশি হতে হবে।",
+        'withdraw_success': "✅ BDT {amount:.2f} এর উইথড্র রিকোয়েস্ট সফলভাবে জমা হয়েছে!",
+        'withdraw_error': "❌ এরর: {msg}",
+        'action_cancelled': "অ্যাকশন বাতিল করা হয়েছে।"
+    }
+}
+
+async def get_text(user_id, key, **kwargs):
+    lang = await db.get_user_language(user_id)
+    text = TRANSLATIONS.get(lang, TRANSLATIONS['en']).get(key, key)
+    return text.format(**kwargs) if kwargs else text
 
 # States for Settings & Withdraw
 SET_PAYMENT = 1
@@ -41,16 +131,14 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
                         logging.error(f"Failed to notify admin {admin_id}: {e}")
 
         keyboard = [
-            ["➕ Register a new account", "📋 My accounts"],
-            ["💰 Balance", "👥 My referrals"],
-            ["⚙️ Settings", "💬 Help"]
+            [await get_text(user.id, 'btn_register'), await get_text(user.id, 'btn_my_accounts')],
+            [await get_text(user.id, 'btn_balance'), await get_text(user.id, 'btn_referrals')],
+            [await get_text(user.id, 'btn_settings'), await get_text(user.id, 'btn_help')]
         ]
         reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
         
         await update.message.reply_text(
-            f"👋 Hello {user.first_name}!\n"
-            "Welcome to the Gmail Selling Bot.\n"
-            "Select an option below to get started.",
+            await get_text(user.id, 'welcome_msg', name=user.first_name),
             reply_markup=reply_markup
         )
         logging.info(f"Start reply sent to {user.id}")
@@ -64,50 +152,53 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         user_id = update.effective_user.id
         logging.info(f"Message received from {user_id}: {text}")
         
-        if text == "➕ Register a new account":
+        # Determine functionality based on text (checking both English and Bangla)
+        # We need a robust way to identify commands. 
+        # For simplicity, we'll try to match the text against known button values for the user's language OR English
+        
+        lang = await db.get_user_language(user_id)
+        t_en = TRANSLATIONS['en']
+        t_bn = TRANSLATIONS['bn']
+        t_cur = TRANSLATIONS.get(lang, t_en)
+        
+        if text in [t_en['btn_register'], t_bn['btn_register']]:
             await register_account(update, context)
             
-        elif text == "💰 Balance":
+        elif text in [t_en['btn_balance'], t_bn['btn_balance']]:
             balance, hold = await db.get_user_balance(user_id)
-            keyboard = [[InlineKeyboardButton("💸 Withdraw", callback_data="withdraw_start")]]
+            keyboard = [[InlineKeyboardButton(await get_text(user_id, 'withdraw_btn'), callback_data="withdraw_start")]]
                 
             await update.message.reply_text(
-                f"💰 *Wallet Balance*\n\n"
-                f"✅ Available: BDT {balance:.2f}\n"
-                f"⏳ Hold: BDT {hold:.2f}\n\n"
-                "Funds in 'Hold' will be moved to 'Available' after admin approval (approx. 24h).",
+                await get_text(user_id, 'balance_msg', balance=balance, hold=hold),
                 reply_markup=InlineKeyboardMarkup(keyboard),
                 parse_mode="Markdown"
             )
             
-        elif text == "📋 My accounts":
+        elif text in [t_en['btn_my_accounts'], t_bn['btn_my_accounts']]:
             history = await db.get_user_history_list(user_id)
             if not history:
-                await update.message.reply_text("You haven't sold any accounts yet.")
+                await update.message.reply_text(await get_text(user_id, 'no_accounts_sold'))
             else:
-                msg = "📋 *My Last 10 Accounts:*\n\n"
+                msg = await get_text(user_id, 'my_accounts_title')
                 for email, password, date, status in history:
                     status_icon = "✅" if status == 'sold' else "⏳" if status == 'submitted' else "❌"
                     msg += f"{status_icon} `{email}`\n"
                 await update.message.reply_text(msg, parse_mode="Markdown")
                 
-        elif text == "👥 My referrals":
+        elif text in [t_en['btn_referrals'], t_bn['btn_referrals']]:
             count = await db.get_referral_stats(user_id)
             bonus = await db.get_referral_bonus()
             bot_username = context.bot.username
             link = f"https://t.me/{bot_username}?start={user_id}"
             await update.message.reply_text(
-                f"👥 *My Referrals*\n\n"
-                f"💰 *Commission per Sale:* BDT {bonus:.2f}\n"
-                f"👥 Total Referrals: {count}\n\n"
-                f"🔗 *Your Referral Link:*\n`{link}`",
+                await get_text(user_id, 'referrals_msg', bonus=bonus, count=count, link=link),
                 parse_mode="Markdown"
             )
             
-        elif text == "💬 Help":
-            await update.message.reply_text("Contact @developermunna for support.")
+        elif text in [t_en['btn_help'], t_bn['btn_help']]:
+            await update.message.reply_text(await get_text(user_id, 'help_msg'))
             
-        elif text == "⚙️ Settings":
+        elif text in [t_en['btn_settings'], t_bn['btn_settings']]:
             await settings_menu(update, context)
 
     except Exception as e:
@@ -123,20 +214,17 @@ async def withdraw_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Check if payment info exists
     pay_info = await db.get_payment_info(user_id)
     if not pay_info:
-        await query.message.reply_text("⚠️ You have not set a payment method yet.\nPlease go to ⚙️ Settings > Payment Methods and save one first.")
+        await query.message.reply_text(await get_text(user_id, 'withdraw_no_method'))
         return ConversationHandler.END
         
     balance, _ = await db.get_user_balance(user_id)
     if balance < 0.50:
-         await query.message.reply_text(f"⚠️ Minimum withdrawal is BDT 0.50. You have BDT {balance:.2f}.")
+         await query.message.reply_text(await get_text(user_id, 'withdraw_min_error', balance=balance))
          return ConversationHandler.END
 
     methods_str = ", ".join(pay_info.keys())
     await query.message.reply_text(
-        f"💸 *Withdraw Request*\n\n"
-        f"Available: BDT {balance:.2f}\n"
-        f"Saved Methods: {methods_str}\n\n"
-        "Enter the amount you want to withdraw (e.g. 5.00):",
+        await get_text(user_id, 'withdraw_request_msg', balance=balance, methods_str=methods_str),
         parse_mode="Markdown"
     )
     return WITHDRAW_AMOUNT
@@ -148,11 +236,11 @@ async def withdraw_process(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         amount = float(update.message.text)
     except ValueError:
-        await update.message.reply_text("❌ Invalid amount. Please enter a number (e.g. 5.50) or /cancel.")
+        await update.message.reply_text(await get_text(user_id, 'invalid_amount'))
         return WITHDRAW_AMOUNT
         
     if amount <= 0:
-         await update.message.reply_text("❌ Amount must be greater than 0.")
+         await update.message.reply_text(await get_text(user_id, 'amount_greater_zero'))
          return WITHDRAW_AMOUNT
 
     pay_info = await db.get_payment_info(user_id)
@@ -160,7 +248,7 @@ async def withdraw_process(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     success, msg = await db.create_withdrawal(user_id, amount, "Manual", details)
     if success:
-        await update.message.reply_text(f"✅ Withdrawal request of BDT {amount:.2f} submitted successfully!")
+        await update.message.reply_text(await get_text(user_id, 'withdraw_success', amount=amount))
         
         # Notify Admins
         admins = await db.get_admins()
@@ -178,28 +266,32 @@ async def withdraw_process(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 except Exception as e:
                     logging.error(f"Failed to notify admin {admin_id}: {e}")
     else:
-        await update.message.reply_text(f"❌ Error: {msg}")
+        await update.message.reply_text(await get_text(user_id, 'withdraw_error', msg=msg))
         
     return ConversationHandler.END
 
 # --- Settings Flow ---
 async def settings_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
     keyboard = [
-        [InlineKeyboardButton("💳 Payment Methods", callback_data="settings_payment")],
-        [InlineKeyboardButton("🌐 Language", callback_data="settings_language")],
-        [InlineKeyboardButton("🚫 Close", callback_data="close")]
+        [InlineKeyboardButton(await get_text(user_id, 'payment_methods_btn'), callback_data="settings_payment")],
+        [InlineKeyboardButton(await get_text(user_id, 'language_btn'), callback_data="settings_language")],
+        [InlineKeyboardButton(await get_text(user_id, 'close_btn'), callback_data="close")]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     
+    text = await get_text(user_id, 'settings_title')
+    
     if update.callback_query:
-        await update.callback_query.edit_message_text("⚙️ *Settings*", reply_markup=reply_markup, parse_mode="Markdown")
+        await update.callback_query.edit_message_text(text, reply_markup=reply_markup, parse_mode="Markdown")
     else:
-        await update.message.reply_text("⚙️ *Settings*", reply_markup=reply_markup, parse_mode="Markdown")
+        await update.message.reply_text(text, reply_markup=reply_markup, parse_mode="Markdown")
 
 async def settings_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     data = query.data
+    user_id = query.from_user.id
     
     if data == "settings_payment":
         keyboard = [
@@ -207,15 +299,14 @@ async def settings_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             [InlineKeyboardButton("Bkash", callback_data="pay_Bkash")],
             [InlineKeyboardButton("Nagad", callback_data="pay_Nagad")],
             [InlineKeyboardButton("Rocket", callback_data="pay_Rocket")],
-            [InlineKeyboardButton("🔙 Back", callback_data="settings_back")]
+            [InlineKeyboardButton(await get_text(user_id, 'back_btn'), callback_data="settings_back")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
-        user_id = query.from_user.id
         info = await db.get_payment_info(user_id)
         info_str = "\n".join([f"• {k}: `{v}`" for k,v in info.items()]) if info else "No methods set."
         
         await query.edit_message_text(
-            f"💳 *Payment Methods*\n\nYour saved methods:\n{info_str}\n\nSelect a method to add/edit:",
+            await get_text(user_id, 'payment_methods_msg', info_str=info_str),
             reply_markup=reply_markup,
             parse_mode="Markdown"
         )
@@ -224,13 +315,15 @@ async def settings_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif data == "settings_language":
          keyboard = [
             [InlineKeyboardButton("🇺🇸 English", callback_data="lang_en"), InlineKeyboardButton("🇧🇩 Bangla", callback_data="lang_bn")],
-            [InlineKeyboardButton("🔙 Back", callback_data="settings_back")]
+            [InlineKeyboardButton(await get_text(user_id, 'back_btn'), callback_data="settings_back")]
         ]
-         await query.edit_message_text("🌐 Select Language:", reply_markup=InlineKeyboardMarkup(keyboard))
+         await query.edit_message_text(await get_text(user_id, 'select_language'), reply_markup=InlineKeyboardMarkup(keyboard))
          
     elif data.startswith("lang_"):
-        await query.edit_message_text("✅ Language set (Saved).")
-        # Placeholder
+        lang = data.split("_")[1]
+        await db.set_user_language(user_id, lang)
+        # Update text immediately
+        await query.edit_message_text(await get_text(user_id, 'language_set'))
         
     elif data == "settings_back":
         await settings_menu(update, context)
@@ -243,12 +336,13 @@ async def settings_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def payment_method_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
+    user_id = query.from_user.id
     method = query.data.split("_")[1]
     context.user_data['payment_method'] = method
     
     label = "UID" if method == "Binance" else "Number"
     
-    await query.edit_message_text(f"Enter your *{method} {label}*:")
+    await query.edit_message_text(await get_text(user_id, 'enter_payment', method=method, label=label), parse_mode="Markdown")
     return ENTER_PAYMENT_VALUE
 
 async def save_payment_value(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -258,14 +352,9 @@ async def save_payment_value(update: Update, context: ContextTypes.DEFAULT_TYPE)
     
     await db.update_payment_info(user_id, {method: value})
     
-    await update.message.reply_text(f"✅ Saved {method}: `{value}`", parse_mode="Markdown")
+    await update.message.reply_text(await get_text(user_id, 'payment_saved', method=method, value=value), parse_mode="Markdown")
     
-    keyboard = [
-        [InlineKeyboardButton("💳 Payment Methods", callback_data="settings_payment")],
-        [InlineKeyboardButton("🌐 Language", callback_data="settings_language")],
-        [InlineKeyboardButton("🚫 Close", callback_data="close")]
-    ]
-    await update.message.reply_text("⚙️ *Settings*", reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="Markdown")
+    await settings_menu(update, context)
     return ConversationHandler.END
 
 async def register_account(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -274,7 +363,7 @@ async def register_account(update: Update, context: ContextTypes.DEFAULT_TYPE):
     account = await db.get_available_account(user_id)
     
     if not account:
-        await update.message.reply_text("⚠️ No accounts available. Please try again later.")
+        await update.message.reply_text(await get_text(user_id, 'no_accounts_avail'))
         return
 
     acc_id, email, password, first, last = account
@@ -292,20 +381,12 @@ async def register_account(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         recovery_section = ""
     
-    message = (
-        f"Register account using the specified data and get BDT {price}\n\n"
-        f"First name: `{first}`\n"
-        f"Last name: `{last}`\n"
-        f"Email: `{email}`\n"
-        f"Password: `{password}`\n"
-        f"{recovery_section}\n\n"
-        "🔒 Be sure to use the specified data."
-    )
+    message = await get_text(user_id, 'register_msg', price=price, first=first, last=last, email=email, password=password, recovery_section=recovery_section)
     
     keyboard = [
-        [InlineKeyboardButton("✔️ Done", callback_data="done")],
-        [InlineKeyboardButton("🚫 Cancel registration", callback_data="cancel")],
-        [InlineKeyboardButton("❓ How to create account", callback_data="help_create")]
+        [InlineKeyboardButton(await get_text(user_id, 'btn_done'), callback_data="done")],
+        [InlineKeyboardButton(await get_text(user_id, 'btn_cancel_reg'), callback_data="cancel")],
+        [InlineKeyboardButton(await get_text(user_id, 'btn_how_to'), callback_data="help_create")]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     
@@ -325,11 +406,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 price = msg
                 id_val, email, password, f, l = acc_info
                 
-                await query.edit_message_text(
-                    f"✅ Account submitted for approval! You earned BDT {price} (Hold).\n"
-                    "Admin will verify within 24 hours.\n"
-                    "Check 'My accounts' for status."
-                )
+                await query.edit_message_text(await get_text(user_id, 'account_submitted', price=price))
                 
                 # Notify Admins
                 admins = await db.get_admins()
@@ -351,16 +428,17 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     elif data == "cancel":
         await db.cancel_registration(user_id)
-        await query.edit_message_text("🚫 Registration cancelled. Account released.")
+        await query.edit_message_text(await get_text(user_id, 'reg_cancelled'))
 
     elif data == "help_create":
-        await query.message.reply_text("Go to gmail.com, click Create Account, use the provided email and password. Use a clean IP.")
+        await query.message.reply_text(await get_text(user_id, 'help_create_msg'))
         
     elif data == "close":
         await query.delete_message()
 
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Action cancelled.")
+    user_id = update.effective_user.id
+    await update.message.reply_text(await get_text(user_id, 'action_cancelled'))
     return ConversationHandler.END
 
 async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:

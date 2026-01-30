@@ -61,6 +61,11 @@ async def init_db():
         except Exception:
             pass
             
+        try:
+             await db.execute("ALTER TABLE users ADD COLUMN language TEXT DEFAULT 'en'")
+        except Exception:
+             pass
+            
         # Check if withdrawals table exists
         await db.execute("""
             CREATE TABLE IF NOT EXISTS withdrawals (
@@ -162,6 +167,17 @@ async def get_payment_info(user_id):
         async with db.execute("SELECT payment_info FROM users WHERE user_id = ?", (user_id,)) as cursor:
             row = await cursor.fetchone()
             return json.loads(row[0]) if row and row[0] else {}
+
+async def set_user_language(user_id, lang):
+    async with aiosqlite.connect(DB_NAME) as db:
+        await db.execute("UPDATE users SET language = ? WHERE user_id = ?", (lang, user_id))
+        await db.commit()
+
+async def get_user_language(user_id):
+    async with aiosqlite.connect(DB_NAME) as db:
+        async with db.execute("SELECT language FROM users WHERE user_id = ?", (user_id,)) as cursor:
+            row = await cursor.fetchone()
+            return row[0] if row and row[0] else 'en'
 
 # History & Referrals
 async def get_user_history_list(user_id):
