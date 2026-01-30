@@ -53,15 +53,13 @@ async def init_db():
             
         try:
             await db.execute("ALTER TABLE users ADD COLUMN hold_balance REAL DEFAULT 0.0")
-        except Exception as e:
-            import logging
-            logging.error(f"Migration error (hold_balance): {e}")
+        except Exception:
+            pass
             
         try:
             await db.execute("ALTER TABLE users ADD COLUMN payment_info TEXT DEFAULT '{}'")
-        except Exception as e:
-            import logging
-            logging.error(f"Migration error (payment_info): {e}")
+        except Exception:
+            pass
             
         # Check if withdrawals table exists
         await db.execute("""
