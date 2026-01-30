@@ -322,7 +322,13 @@ async def settings_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
          
     elif data.startswith("lang_"):
         lang = data.split("_")[1]
+        
+        logging.info(f"User {user_id} switching language to {lang}")
         await db.set_user_language(user_id, lang)
+        
+        # Verify it was set
+        new_lang = await db.get_user_language(user_id)
+        logging.info(f"User {user_id} language in DB is now: {new_lang}")
         
         # Update text immediately
         await query.edit_message_text(await get_text(user_id, 'language_set', lang=lang))
