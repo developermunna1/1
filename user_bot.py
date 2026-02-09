@@ -140,6 +140,22 @@ async def send_join_channel_message(update, context):
         # If called from a callback (unlikely for initial check, but possible)
         await update.callback_query.message.reply_text(text, reply_markup=reply_markup)
 
+async def send_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE, user):
+    try:
+        lang = await db.get_user_language(user.id)
+        keyboard = [
+            [await get_text(user.id, 'btn_register', lang=lang), await get_text(user.id, 'btn_my_accounts', lang=lang)],
+            [await get_text(user.id, 'btn_balance', lang=lang), await get_text(user.id, 'btn_referrals', lang=lang)],
+            [await get_text(user.id, 'btn_settings', lang=lang), await get_text(user.id, 'btn_help', lang=lang)]
+        ]
+        reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+        
+        text = await get_text(user.id, 'welcome_msg', lang=lang, name=user.first_name)
+        
+        await context.bot.send_message(chat_id=user.id, text=text, reply_markup=reply_markup)
+    except Exception as e:
+        logging.error(f"Error sending main menu: {e}")
+
 async def check_join_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     user_id = query.from_user.id
@@ -149,8 +165,11 @@ async def check_join_callback(update: Update, context: ContextTypes.DEFAULT_TYPE
     if is_member:
         await query.answer("✅ আপনি চ্যানেলে জয়েন করেছেন!")
         await query.message.delete()
-        # Initial start flow
-        await start(update, context)
+        
+        # Initial start flow - Register if not exists
+        await db.add_user(user_id, query.from_user.full_name)
+        
+        await send_main_menu(update, context, query.from_user)
     else:
         await query.answer("⚠️ আপনি এখনো চ্যানেলে জয়েন করেননি!", show_alert=True)
 
@@ -184,21 +203,15 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     except Exception as e:
                         logging.error(f"Failed to notify admin {admin_id}: {e}")
 
-        keyboard = [
-            [await get_text(user.id, 'btn_register'), await get_text(user.id, 'btn_my_accounts')],
-            [await get_text(user.id, 'btn_balance'), await get_text(user.id, 'btn_referrals')],
-            [await get_text(user.id, 'btn_settings'), await get_text(user.id, 'btn_help')]
-        ]
-        reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
-        
-        await update.message.reply_text(
-            await get_text(user.id, 'welcome_msg', name=user.first_name),
-            reply_markup=reply_markup
-        )
+        await send_main_menu(update, context, user)
         logging.info(f"Start reply sent to {user.id}")
     except Exception as e:
         logging.error(f"Error in start command: {e}", exc_info=True)
-        await update.message.reply_text("An error occurred. Please try again later.")
+        # Avoid crashing if we can't reply
+        try:
+            await update.message.reply_text("An error occurred. Please try again later.")
+        except:
+            pass
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
@@ -270,6 +283,11 @@ async def withdraw_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     user_id = query.from_user.id
+    
+    # Check Channel Membership
+    if not await check_membership(user_id, context):
+        await send_join_channel_message(update, context)
+        return ConversationHandler.END
     
     # Check if payment info exists
     pay_info = await db.get_payment_info(user_id)
@@ -352,6 +370,11 @@ async def settings_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.answer()
     data = query.data
     user_id = query.from_user.id
+    
+    # Check Channel Membership
+    if not await check_membership(user_id, context):
+        await send_join_channel_message(update, context)
+        return ConversationHandler.END
     
     if data == "settings_payment":
         keyboard = [
@@ -481,6 +504,11 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.answer()
     
     user_id = query.from_user.id
+    
+    # Check Channel Membership
+    if not await check_membership(user_id, context):
+        await send_join_channel_message(update, context)
+        return
     data = query.data
     
     if data == "done":
