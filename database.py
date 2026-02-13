@@ -183,10 +183,16 @@ async def update_payment_info(user_id, info_dict):
         # Merge with existing
         async with db.execute("SELECT payment_info FROM users WHERE user_id = ?", (user_id,)) as cursor:
             row = await cursor.fetchone()
-            current = json.loads(row[0]) if row and row[0] else {}
             
-        current.update(info_dict)
-        await db.execute("UPDATE users SET payment_info = ? WHERE user_id = ?", (json.dumps(current), user_id))
+        if not row:
+            # User doesn't exist, create them with this info
+            current = info_dict
+            await db.execute("INSERT INTO users (user_id, username, payment_info, hold_balance, is_banned) VALUES (?, 'Unknown', ?, 0.0, 0)", (user_id, json.dumps(current)))
+        else:
+            current = json.loads(row[0]) if row[0] else {}
+            current.update(info_dict)
+            await db.execute("UPDATE users SET payment_info = ? WHERE user_id = ?", (json.dumps(current), user_id))
+            
         await db.commit()
 
 async def get_payment_info(user_id):
