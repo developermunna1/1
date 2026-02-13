@@ -190,6 +190,11 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await send_join_channel_message(update, context)
             return
 
+        # Check Ban Status
+        if await db.check_ban(user.id):
+            await update.message.reply_text("🚫 You are banned from using this bot.")
+            return
+
         is_new = await db.add_user(user.id, user.full_name, referrer_id)
         
         if is_new:
@@ -222,6 +227,11 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # Check Channel Membership
         if not await check_membership(user_id, context):
             await send_join_channel_message(update, context)
+            return
+            
+        # Check Ban Status
+        if await db.check_ban(user_id):
+            await update.message.reply_text("🚫 You are banned from using this bot.")
             return
 
         
@@ -508,6 +518,11 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Check Channel Membership
     if not await check_membership(user_id, context):
         await send_join_channel_message(update, context)
+        return
+
+    # Check Ban Status
+    if await db.check_ban(user_id):
+        await query.answer("🚫 You are banned.", show_alert=True)
         return
     data = query.data
     

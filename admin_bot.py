@@ -1,7 +1,6 @@
-
 import os
 import logging
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, Bot
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, Bot
 from telegram.ext import Application, CommandHandler, MessageHandler, ContextTypes, filters, ConversationHandler, CallbackQueryHandler
 import database as db
 import json
@@ -19,6 +18,7 @@ DM_USER_ID = 5
 DM_MSG = 6
 SETTING_RECOVERY = 7
 SETTING_NAMES = 8
+BAN_USER_ID = 9
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
@@ -26,28 +26,129 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await db.add_admin(user_id)
     
     keyboard = [
+        ["✅ অ্যাপ্রুভ", "❌ রিজেক্ট"],
+        ["🚫 ইউজার ব্যান"],
+        ["📊 ড্যাশবোর্ড", "👥 সব ইউজার"],
+        ["📋 পেন্ডিং টাস্ক", "💰 পেন্ডিং উত্তোলন"],
+        ["✅ অ্যাপ্রুভড টাস্ক", "❌ রিজেক্টেড টাস্ক"],
+        ["⚙️ সেটিংস", "📢 ব্রডকাস্ট"]
+    ]
+    reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+    
+    text = "👨‍💼 *Admin Panel*\nSelect an option below:"
+    
+    if update.message:
+        await update.message.reply_text(text, reply_markup=reply_markup, parse_mode="Markdown")
+    
+async def handle_admin_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = update.message.text
+    
+    if text == "📊 ড্যাশবোর্ড":
+        await stats(update, context)
+    elif text == "👥 সব ইউজার":
+        await view_all_users(update, context)
+    elif text == "✅ অ্যাপ্রুভ" or text == "📋 পেন্ডিং টাস্ক":
+        await view_approvals(update, context)
+    elif text == "❌ রিজেক্ট":
+        await view_approvals(update, context)
+    elif text == "💰 পেন্ডিং উত্তোলন":
+        await view_withdrawals(update, context)
+    elif text == "✅ অ্যাপ্রুভড টাস্ক":
+        await view_approved_tasks_history(update, context)
+    elif text == "❌ রিজেক্টেড টাস্ক":
+        await view_rejected_tasks_history(update, context)
+    elif text == "🚫 ইউজার ব্যান":
+        await ban_user_start(update, context)
+    elif text == "⚙️ সেটিংস":
+        await settings_submenu(update, context)
+    elif text == "📢 ব্রডকাস্ট":
+        await broadcast_start(update, context)
+
+async def view_all_users(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    total = await db.get_total_usersed()
+    await update.message.reply_text(f"👥 **Total Users:** `{total}`", parse_mode="Markdown")
+
+async def view_approved_tasks_history(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    tasks = await db.get_approved_tasks()
+    if not tasks:
+        await update.message.reply_text("🚫 No approved tasks found.")
+        return
+        
+    msg = "✅ *Last 10 Approved Tasks:*\n\n"
+    for tid, email, uid, date in tasks:
+        msg += f"🆔 `{tid}` | 👤 `{uid}`\n📧 `{email}`\n📅 `{date}`\n\n"
+        
+    await update.message.reply_text(msg, parse_mode="Markdown")
+
+async def view_rejected_tasks_history(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    tasks = await db.get_rejected_tasks()
+    if not tasks:
+        await update.message.reply_text("🚫 No rejected tasks found.")
+        return
+        
+    msg = "❌ *Last 10 Rejected Tasks:*\n\n"
+    for tid, email, uid, date in tasks:
+        msg += f"🆔 `{tid}` | 👤 `{uid}`\n📧 `{email}`\n📅 `{date}`\n\n"
+        
+    await update.message.reply_text(msg, parse_mode="Markdown")
+
+# --- Ban User Flow ---
+async def ban_user_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # This might be triggered via regex, so update.message is safe
+    await update.message.reply_text("🚫 Enter the **User ID** to ban/unban:", parse_mode="Markdown")
+    return BAN_USER_ID
+
+async def ban_user_process(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = update.message.text.strip()
+    if not text.isdigit():
+        await update.message.reply_text("❌ Invalid ID.")
+        return BAN_USER_ID
+        
+    user_id = int(text)
+    
+    # Check current status
+    is_banned = await db.check_ban(user_id)
+    
+    keyboard = [
+        [InlineKeyboardButton("🚫 Ban" if not is_banned else "✅ Unban", callback_data=f"ban_toggle_{user_id}")]
+    ]
+    status = "BANNED" if is_banned else "ACTIVE"
+    await update.message.reply_text(
+        f"👤 User: `{user_id}`\nStatus: **{status}**\n\nSelect action:", 
+        reply_markup=InlineKeyboardMarkup(keyboard),
+        parse_mode="Markdown"
+    )
+    return ConversationHandler.END
+
+async def ban_toggle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    data = query.data
+    user_id = int(data.split("_")[2])
+    
+    is_banned = await db.check_ban(user_id)
+    
+    if is_banned:
+        await db.unban_user(user_id)
+        action = "Unbanned"
+        # Optional: Set status to ACTIVE
+    else:
+        await db.ban_user(user_id)
+        action = "Banned"
+        # Optional: Set status to BANNED
+        
+    await query.edit_message_text(f"✅ User `{user_id}` has been **{action}**.", parse_mode="Markdown")
+
+
+async def settings_submenu(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    keyboard = [
         [InlineKeyboardButton("➕ Add Accounts", callback_data="add_accounts")],
-        [InlineKeyboardButton("⏳ Pending Approvals", callback_data="approvals")],
-        [InlineKeyboardButton("💰 Pending Withdrawals", callback_data="withdrawals")], 
         [InlineKeyboardButton("💵 Set Price", callback_data="set_price"), InlineKeyboardButton("🎁 Set Ref Bonus", callback_data="set_ref_bonus")],
         [InlineKeyboardButton("📧 Set Recovery Email", callback_data="set_recovery"), InlineKeyboardButton("📝 Set Names", callback_data="set_names")], 
-        [InlineKeyboardButton("📢 Broadcast", callback_data="broadcast"), InlineKeyboardButton("✉️ DM User", callback_data="dm_user")], 
-        [InlineKeyboardButton("📊 Statistics", callback_data="stats")]
+        [InlineKeyboardButton("✉️ DM User", callback_data="dm_user")]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
-    
-    text = "👨‍💼 *Admin Panel*"
-    
-    if update.callback_query:
-        try:
-            await update.callback_query.message.edit_text(text, reply_markup=reply_markup, parse_mode="Markdown")
-        except:
-             await update.callback_query.message.reply_text(text, reply_markup=reply_markup, parse_mode="Markdown")
-    else:
-        await update.message.reply_text(text, reply_markup=reply_markup, parse_mode="Markdown")
-
-async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    pass
+    await update.message.reply_text("⚙️ *Settings Menu*", reply_markup=reply_markup, parse_mode="Markdown")
 
 async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
     available, sold, users = await db.get_stats()
@@ -67,10 +168,10 @@ async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"📝 Names: `{first} {last}`"
     )
     
-    keyboard = [[InlineKeyboardButton("🔙 Back", callback_data="back_home")]]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    
-    await update.callback_query.edit_message_text(text, parse_mode="Markdown", reply_markup=reply_markup)
+    if update.callback_query:
+        await update.callback_query.message.reply_text(text, parse_mode="Markdown")
+    else:
+        await update.message.reply_text(text, parse_mode="Markdown")
 
 async def back_home(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await start(update, context)
@@ -100,7 +201,6 @@ async def set_names_val(update: Update, context: ContextTypes.DEFAULT_TYPE):
     first, last = parts
     await db.set_names(first, last)
     await update.message.reply_text(f"✅ Names updated to: First=`{first}`, Last=`{last}`", parse_mode="Markdown")
-    await start(update, context)
     return ConversationHandler.END
 
 # --- Recovery Email Flow ---
@@ -119,14 +219,11 @@ async def set_recovery_val(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text.strip()
     await db.set_recovery_email(text)
     await update.message.reply_text(f"✅ Recovery Email updated to `{text}`", parse_mode="Markdown")
-    await start(update, context)
     return ConversationHandler.END
 
 # --- Broadcast Flow ---
 async def broadcast_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-    await query.message.reply_text("📢 *Broadcast*\n\nEnter the message you want to send to ALL users:", parse_mode="Markdown")
+    await update.message.reply_text("📢 *Broadcast*\n\nEnter the message you want to send to ALL users:", parse_mode="Markdown")
     return BROADCAST_MSG
 
 async def broadcast_send(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -147,7 +244,6 @@ async def broadcast_send(update: Update, context: ContextTypes.DEFAULT_TYPE):
             pass # Blocked or error
             
     await status_msg.edit_text(f"✅ Broadcast sent to {count} users.")
-    await start(update, context)
     return ConversationHandler.END
 
 # --- DM User Flow ---
@@ -178,21 +274,20 @@ async def dm_send(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception as e:
         await update.message.reply_text(f"❌ Failed to send: {e}")
         
-    await start(update, context)
     return ConversationHandler.END
 
 # --- Withdrawals Flow ---
 async def view_withdrawals(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
+    if update.callback_query:
+        await update.callback_query.answer()
     
     withdrawals = await db.get_pending_withdrawals()
     
     if not withdrawals:
-        await query.edit_message_text(
-            "✅ No pending withdrawals.",
-            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 Back", callback_data="back_home")]])
-        )
+        if update.callback_query:
+            await update.callback_query.message.reply_text("✅ No pending withdrawals.")
+        else:
+            await update.message.reply_text("✅ No pending withdrawals.")
         return
 
     wid, user_id, amount, method, details, date = withdrawals[0]
@@ -204,19 +299,21 @@ async def view_withdrawals(update: Update, context: ContextTypes.DEFAULT_TYPE):
         det_str = details
 
     keyboard = [
-        [InlineKeyboardButton("✅ Paid", callback_data=f"pay_{wid}"), InlineKeyboardButton("❌ Reject", callback_data=f"rejectpay_{wid}")],
-        [InlineKeyboardButton("🔙 Back", callback_data="back_home")]
+        [InlineKeyboardButton("✅ Paid", callback_data=f"pay_{wid}"), InlineKeyboardButton("❌ Reject", callback_data=f"rejectpay_{wid}")]
     ]
     
-    await query.edit_message_text(
+    text = (
         f"💰 *Pending Withdrawal ({len(withdrawals)} left)*\n\n"
         f"👤 User ID: `{user_id}`\n"
         f"💸 Amount: `BDT {amount:.2f}`\n"
         f"💳 Method: `{method}`\n"
-        f"📋 Details:\n`{det_str}`",
-        reply_markup=InlineKeyboardMarkup(keyboard),
-        parse_mode="Markdown"
+        f"📋 Details:\n`{det_str}`"
     )
+    
+    if update.callback_query:
+        await update.callback_query.edit_message_text(text, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="Markdown")
+    else:
+        await update.message.reply_text(text, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="Markdown")
 
 async def handle_withdrawal_action(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -241,33 +338,36 @@ async def handle_withdrawal_action(update: Update, context: ContextTypes.DEFAULT
 
 # --- Approvals Flow ---
 async def view_approvals(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-    
+    if update.callback_query:
+        await update.callback_query.answer()
+        
     approvals = await db.get_pending_approvals()
     
     if not approvals:
-        await query.edit_message_text(
-            "✅ No pending approvals.",
-            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 Back", callback_data="back_home")]])
-        )
+        msg = "✅ No pending approvals."
+        if update.callback_query:
+            await update.callback_query.message.reply_text(msg)
+        else:
+            await update.message.reply_text(msg)
         return
 
     acc_id, email, password, user_id = approvals[0]
     
     keyboard = [
-        [InlineKeyboardButton("✅ Approve", callback_data=f"approve_{acc_id}"), InlineKeyboardButton("❌ Reject", callback_data=f"reject_{acc_id}")],
-        [InlineKeyboardButton("🔙 Back", callback_data="back_home")]
+        [InlineKeyboardButton("✅ Approve", callback_data=f"approve_{acc_id}"), InlineKeyboardButton("❌ Reject", callback_data=f"reject_{acc_id}")]
     ]
     
-    await query.edit_message_text(
+    text = (
         f"⏳ *Pending Approval ({len(approvals)} left)*\n\n"
         f"📧 Email: `{email}`\n"
         f"🔑 Pass: `{password}`\n"
-        f"👤 User ID: `{user_id}`",
-        reply_markup=InlineKeyboardMarkup(keyboard),
-        parse_mode="Markdown"
+        f"👤 User ID: `{user_id}`"
     )
+    
+    if update.callback_query:
+         await update.callback_query.edit_message_text(text, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="Markdown")
+    else:
+         await update.message.reply_text(text, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="Markdown")
 
 async def handle_approval_action(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -301,7 +401,7 @@ async def handle_approval_action(update: Update, context: ContextTypes.DEFAULT_T
 async def add_start_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
-    await query.edit_message_text(
+    await query.message.reply_text(
         "Send me the accounts in `email:password` format.\n"
         "Or `email:password:firstname:lastname` to assign specific names.\n"
         "You can send a list or a file.\n\n"
@@ -331,7 +431,6 @@ async def add_accounts(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     failed += 1
     
     await update.message.reply_text(f"✅ Added {count} accounts.\n❌ Failed/Duplicate: {failed}")
-    await start(update, context)
     return ConversationHandler.END
 
 async def add_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -358,7 +457,6 @@ async def add_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     failed += 1
                 
     await update.message.reply_text(f"✅ (File) Added {count} accounts.\n❌ Failed/Duplicate: {failed}")
-    await start(update, context)
     return ConversationHandler.END
 
 # --- Set Price & Bonus Flow ---
@@ -366,7 +464,7 @@ async def price_start_callback(update: Update, context: ContextTypes.DEFAULT_TYP
     query = update.callback_query
     await query.answer()
     current = await db.get_price()
-    await query.edit_message_text(
+    await query.message.reply_text(
         f"Current price: BDT {current}\nSend me the new price (e.g. 0.25):",
         parse_mode="Markdown"
     )
@@ -378,7 +476,6 @@ async def set_price_val(update: Update, context: ContextTypes.DEFAULT_TYPE):
         price = float(text)
         await db.set_price(price)
         await update.message.reply_text(f"✅ Price updated to BDT {price}")
-        await start(update, context)
         return ConversationHandler.END
     except ValueError:
         await update.message.reply_text("❌ Invalid number.")
@@ -388,7 +485,7 @@ async def ref_bonus_start_callback(update: Update, context: ContextTypes.DEFAULT
     query = update.callback_query
     await query.answer()
     current = await db.get_referral_bonus()
-    await query.edit_message_text(
+    await query.message.reply_text(
         f"Current Referral Bonus: BDT {current}\nSend me the new bonus amount (e.g. 0.05):",
         parse_mode="Markdown"
     )
@@ -400,7 +497,6 @@ async def set_ref_bonus_val(update: Update, context: ContextTypes.DEFAULT_TYPE):
         price = float(text)
         await db.set_referral_bonus(price)
         await update.message.reply_text(f"✅ Referral Bonus updated to BDT {price}")
-        await start(update, context)
         return ConversationHandler.END
     except ValueError:
         await update.message.reply_text("❌ Invalid number.")
@@ -408,7 +504,6 @@ async def set_ref_bonus_val(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Action cancelled.")
-    await start(update, context)
     return ConversationHandler.END
 
 def get_admin_handler():
@@ -459,7 +554,7 @@ def get_admin_handler():
     )
     
     conv_broad = ConversationHandler(
-        entry_points=[CallbackQueryHandler(broadcast_start, pattern="^broadcast$")],
+        entry_points=[MessageHandler(filters.Regex("^📢 ব্রডকাস্ট$"), broadcast_start)],
         states={
             BROADCAST_MSG: [MessageHandler(filters.TEXT & ~filters.COMMAND, broadcast_send)]
         },
@@ -474,6 +569,14 @@ def get_admin_handler():
         },
         fallbacks=[cancel_handler, start_handler]
     )
+    
+    conv_ban = ConversationHandler(
+        entry_points=[MessageHandler(filters.Regex("^🚫 ইউজার ব্যান$"), ban_user_start)],
+        states={
+            BAN_USER_ID: [MessageHandler(filters.TEXT & ~filters.COMMAND, ban_user_process)]
+        },
+        fallbacks=[cancel_handler, start_handler]
+    )
 
     return [
         start_handler,
@@ -484,10 +587,13 @@ def get_admin_handler():
         conv_names,
         conv_broad,
         conv_dm,
+        conv_ban,
         CallbackQueryHandler(stats, pattern="^stats$"),
         CallbackQueryHandler(view_approvals, pattern="^approvals$"),
         CallbackQueryHandler(handle_approval_action, pattern="^(approve|reject)_"),
         CallbackQueryHandler(view_withdrawals, pattern="^withdrawals$"),
         CallbackQueryHandler(handle_withdrawal_action, pattern="^(pay|rejectpay)_"),
-        CallbackQueryHandler(back_home, pattern="^back_home$")
+        CallbackQueryHandler(back_home, pattern="^back_home$"),
+        CallbackQueryHandler(ban_toggle_callback, pattern="^ban_toggle_"),
+        MessageHandler(filters.TEXT & ~filters.COMMAND, handle_admin_menu)
     ]

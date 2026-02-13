@@ -88,6 +88,12 @@ async def init_db():
             )
         """)
             
+        # Check if users table has is_banned column
+        try:
+            await db.execute("ALTER TABLE users ADD COLUMN is_banned INTEGER DEFAULT 0")
+        except Exception:
+            pass
+            
         await db.commit()
 
 async def get_db_connection():
@@ -109,6 +115,28 @@ async def get_all_users():
         async with db.execute("SELECT user_id FROM users") as cursor:
             return [row[0] for row in await cursor.fetchall()]
 
+async def get_total_usersed():
+    async with aiosqlite.connect(DB_NAME) as db:
+        async with db.execute("SELECT COUNT(*) FROM users") as cursor:
+             return (await cursor.fetchone())[0]
+
+# Ban System
+async def ban_user(user_id):
+    async with aiosqlite.connect(DB_NAME) as db:
+        await db.execute("UPDATE users SET is_banned = 1 WHERE user_id = ?", (user_id,))
+        await db.commit()
+
+async def unban_user(user_id):
+    async with aiosqlite.connect(DB_NAME) as db:
+        await db.execute("UPDATE users SET is_banned = 0 WHERE user_id = ?", (user_id,))
+        await db.commit()
+
+async def check_ban(user_id):
+    async with aiosqlite.connect(DB_NAME) as db:
+        async with db.execute("SELECT is_banned FROM users WHERE user_id = ?", (user_id,)) as cursor:
+            row = await cursor.fetchone()
+            return True if row and row[0] == 1 else False
+
 # User Operations
 async def add_user(user_id, username, referrer_id=None):
     try:
@@ -118,7 +146,7 @@ async def add_user(user_id, username, referrer_id=None):
                 if await cursor.fetchone():
                     return False # Already exists
             
-            await db.execute("INSERT OR IGNORE INTO users (user_id, username, referred_by, hold_balance, payment_info) VALUES (?, ?, ?, 0.0, '{}')", (user_id, username, referrer_id))
+            await db.execute("INSERT OR IGNORE INTO users (user_id, username, referred_by, hold_balance, payment_info, is_banned) VALUES (?, ?, ?, 0.0, '{}', 0)", (user_id, username, referrer_id))
             await db.commit()
             return True # New user
     except Exception as e:
@@ -183,7 +211,7 @@ async def get_user_language(user_id):
 async def get_user_history_list(user_id):
     async with aiosqlite.connect(DB_NAME) as db:
         # Show sold OR submitted
-        async with db.execute("SELECT email, password, created_at, status FROM accounts WHERE assigned_to = ? AND status IN ('sold', 'submitted') ORDER BY created_at DESC LIMIT 10", (user_id,)) as cursor:
+        async with db.execute("SELECT email, password, created_at, status FROM accounts WHERE assigned_to = ? AND status IN ('sold', 'submitted', 'rejected') ORDER BY created_at DESC LIMIT 10", (user_id,)) as cursor:
             return await cursor.fetchall()
 
 async def get_referral_stats(user_id):
@@ -260,6 +288,16 @@ async def get_pending_approvals():
     async with aiosqlite.connect(DB_NAME) as db:
         async with db.execute("SELECT id, email, password, assigned_to FROM accounts WHERE status = 'submitted'") as cursor:
             return await cursor.fetchall()
+            
+async def get_approved_tasks(limit=10):
+    async with aiosqlite.connect(DB_NAME) as db:
+        async with db.execute("SELECT id, email, assigned_to, created_at FROM accounts WHERE status = 'sold' ORDER BY id DESC LIMIT ?", (limit,)) as cursor:
+            return await cursor.fetchall()
+
+async def get_rejected_tasks(limit=10):
+    async with aiosqlite.connect(DB_NAME) as db:
+        async with db.execute("SELECT id, email, assigned_to, created_at FROM accounts WHERE status = 'rejected' ORDER BY id DESC LIMIT ?", (limit,)) as cursor:
+            return await cursor.fetchall()
 
 async def approve_account(account_id):
     async with aiosqlite.connect(DB_NAME) as db:
@@ -333,6 +371,16 @@ async def create_withdrawal(user_id, amount, method, details):
 async def get_pending_withdrawals():
     async with aiosqlite.connect(DB_NAME) as db:
         async with db.execute("SELECT id, user_id, amount, method, details, created_at FROM withdrawals WHERE status = 'pending'") as cursor:
+            return await cursor.fetchall()
+            
+async def get_paid_withdrawals(limit=10):
+     async with aiosqlite.connect(DB_NAME) as db:
+        async with db.execute("SELECT id, user_id, amount, method, created_at FROM withdrawals WHERE status = 'paid' ORDER BY id DESC LIMIT ?", (limit,)) as cursor:
+            return await cursor.fetchall()
+            
+async def get_rejected_withdrawals(limit=10):
+     async with aiosqlite.connect(DB_NAME) as db:
+        async with db.execute("SELECT id, user_id, amount, method, created_at FROM withdrawals WHERE status = 'rejected' ORDER BY id DESC LIMIT ?", (limit,)) as cursor:
             return await cursor.fetchall()
 
 async def mark_withdrawal(withdrawal_id, status):
