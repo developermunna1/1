@@ -351,23 +351,25 @@ async def view_approvals(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await update.message.reply_text(msg)
         return
 
-    acc_id, email, password, user_id = approvals[0]
+    # Prepare list of all pending accounts
+    msg = f"⏳ *Pending Approvals ({len(approvals)} total)*\n\n"
+    for i, (acc_id, email, password, user_id) in enumerate(approvals):
+        msg += f"{i+1}. 📧 `{email}` | 🔑 `{password}` | 👤 `{user_id}`\n"
+    
+    msg += "\n⬇️ *Action on First Account (Number 1)*:"
+
+    # Buttons apply to the FIRST account in the list
+    first_acc_id = approvals[0][0]
     
     keyboard = [
-        [InlineKeyboardButton("✅ Approve", callback_data=f"approve_{acc_id}"), InlineKeyboardButton("❌ Reject", callback_data=f"reject_{acc_id}")]
+        [InlineKeyboardButton("✅ Approve #1", callback_data=f"approve_{first_acc_id}"), InlineKeyboardButton("❌ Reject #1", callback_data=f"reject_{first_acc_id}")]
     ]
     
-    text = (
-        f"⏳ *Pending Approval ({len(approvals)} left)*\n\n"
-        f"📧 Email: `{email}`\n"
-        f"🔑 Pass: `{password}`\n"
-        f"👤 User ID: `{user_id}`"
-    )
-    
     if update.callback_query:
-         await update.callback_query.edit_message_text(text, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="Markdown")
+         # Edit message might fail if message is too long or identical, but here content changes if list changes
+         await update.callback_query.edit_message_text(msg, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="Markdown")
     else:
-         await update.message.reply_text(text, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="Markdown")
+         await update.message.reply_text(msg, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="Markdown")
 
 async def handle_approval_action(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
