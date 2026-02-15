@@ -41,14 +41,20 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(text, reply_markup=reply_markup, parse_mode="Markdown")
     
 async def handle_admin_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    text = update.message.text
+    text = update.message.text.strip()
     
+    logging.info(f"Admin menu received: '{text}' ({[ord(c) for c in text]})")
+
     if text == "📊 ড্যাশবোর্ড":
         await stats(update, context)
     elif text == "👥 সব ইউজার":
         await view_all_users(update, context)
     elif text == "✅ অ্যাপ্রুভ" or text == "📋 পেন্ডিং টাস্ক":
-        await view_approvals(update, context)
+        try:
+            await view_approvals(update, context)
+        except Exception as e:
+            logging.error(f"Error in view_approvals: {e}", exc_info=True)
+            await update.message.reply_text(f"Error showing approvals: {e}")
     elif text == "❌ রিজেক্ট":
         await view_approvals(update, context)
     elif text == "💰 পেন্ডিং উত্তোলন":
@@ -63,6 +69,8 @@ async def handle_admin_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await settings_submenu(update, context)
     elif text == "📢 ব্রডকাস্ট":
         await broadcast_start(update, context)
+    else:
+        logging.warning(f"Unmatched admin menu text: '{text}'")
 
 async def view_all_users(update: Update, context: ContextTypes.DEFAULT_TYPE):
     total = await db.get_total_usersed()
@@ -376,6 +384,7 @@ async def handle_approval_action(update: Update, context: ContextTypes.DEFAULT_T
     await query.answer()
     data = query.data
     action, acc_id = data.split("_")
+    acc_id = int(acc_id)
     
     user_bot = Bot(token=USER_BOT_TOKEN)
     

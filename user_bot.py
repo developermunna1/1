@@ -44,7 +44,7 @@ TRANSLATIONS = {
         'reg_cancelled': "🚫 Registration cancelled. Account released.",
         'help_create_msg': "Go to gmail.com, click Create Account, use the provided email and password. Use a clean IP.",
         'withdraw_no_method': "⚠️ You have not set a payment method yet.\nPlease go to ⚙️ Settings > Payment Methods and save one first.",
-        'withdraw_min_error': "⚠️ Minimum withdrawal is 0.50 BDT. You have {balance:.2f} BDT.",
+        'withdraw_min_error': "⚠️ Minimum withdrawal is 25.00 BDT. You have {balance:.2f} BDT.",
         'withdraw_request_msg': "💸 *Withdraw Request*\n\nAvailable: {balance:.2f} BDT\nSaved Methods: {methods_str}\n\nEnter the amount you want to withdraw (e.g. 5.00):",
         'invalid_amount': "❌ Invalid amount. Please enter a number (e.g. 5.50) or /cancel.",
         'amount_greater_zero': "❌ Amount must be greater than 0.",
@@ -85,7 +85,7 @@ TRANSLATIONS = {
         'reg_cancelled': "🚫 রেজিস্ট্রেশন বাতিল করা হয়েছে। অ্যাকাউন্ট রিলিজড।",
         'help_create_msg': "gmail.com এ যান, Create Account এ ক্লিক করুন, দেওয়া ইমেইল এবং পাসওয়ার্ড ব্যবহার করুন। ক্লিন আইপি ব্যবহার করুন।",
         'withdraw_no_method': "⚠️ আপনি কোনো পেমেন্ট মেথড সেট করেননি।\nদয়া করে ⚙️ সেটিংস > পেমেন্ট মেথড এ গিয়ে আগে সেট করুন।",
-        'withdraw_min_error': "⚠️ সর্বনিম্ন উইথড্র 0.50 BDT। আপনার আছে {balance:.2f} BDT।",
+        'withdraw_min_error': "⚠️ সর্বনিম্ন উইথড্র 25.00 BDT। আপনার আছে {balance:.2f} BDT।",
         'withdraw_request_msg': "💸 *উইথড্র রিকোয়েস্ট*\n\nঅ্যাভেইলেবল: {balance:.2f} BDT\nসেভড মেথড: {methods_str}\n\nআপনি কত টাকা তুলতে চান লিখুন (যেমন: 5.00):",
         'invalid_amount': "❌ ভুল অ্যামাউন্ট। দয়া করে সংখ্যা লিখুন (যেমন: 5.50) অথবা /cancel দিন।",
         'amount_greater_zero': "❌ অ্যামাউন্ট ০ এর বেশি হতে হবে।",
@@ -306,7 +306,7 @@ async def withdraw_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return ConversationHandler.END
         
     balance, _ = await db.get_user_balance(user_id)
-    if balance < 0.50:
+    if balance < 25.00:
          await query.message.reply_text(await get_text(user_id, 'withdraw_min_error', balance=balance))
          return ConversationHandler.END
 
